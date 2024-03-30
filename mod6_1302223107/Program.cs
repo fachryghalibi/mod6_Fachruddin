@@ -1,14 +1,23 @@
-﻿class Program
-{
+﻿using System;
+using System.Collections.Specialized;
+using System.Diagnostics;
+using System.Diagnostics.Contracts;
 
+class Program
+{
     public class SayaTubeUser
     {
         private int id;
         private List<SayaTubeVideo> uploadedVideos;
         public String Username;
 
+
         public SayaTubeUser(String username)
         {
+            if (username == null)
+                throw new ArgumentNullException(nameof(username), "Username tidak boleh null.");
+            if (username.Length > 100)
+                throw new ArgumentException("Username tidak boleh lebih dari 100 karakter.", nameof(username));
             this.Username = username;
             var rand = new Random();
             this.id = rand.Next(9999);
@@ -27,6 +36,10 @@
 
         public void AddVideo(SayaTubeVideo video)
         {
+            if (video == null)
+                throw new ArgumentNullException(nameof(video), "Video tidak boleh null.");
+            if (video.getPlayCount() > int.MaxValue)
+                throw new ArgumentException("Jumlah playcount video tidak boleh lebih dari batas max integer.", nameof(video));
             uploadedVideos.Add(video);
         }
 
@@ -35,7 +48,13 @@
             Console.WriteLine("User: " + Username);
             for (int i = 0; i < uploadedVideos.Count; i++)
             {
+                if (i > 7)
+                {
+                    Console.WriteLine("Jumlah Video maksimal yang boleh diprint hanya 8");
+                    break;
+                }
                 Console.WriteLine("Video " + (i + 1) + " judul: " + uploadedVideos[i].getTitle());
+
             }
         }
     }
@@ -43,22 +62,41 @@
     public class SayaTubeVideo
     {
         private int id;
-        private String title;
+        private string title;
         private int playCount;
 
-        public SayaTubeVideo(String title)
+        public SayaTubeVideo(string title)
         {
+            if (title == null)
+                throw new ArgumentNullException(nameof(title), "Judul video tidak boleh null.");
+            if (title.Length > 200)
+                throw new ArgumentException("Judul video tidak boleh lebih dari 100 karakter.", nameof(title));
+
             var rand = new Random();
             this.id = rand.Next(9999);
             this.title = title;
             this.playCount = 0;
-
         }
-
 
         public void IncreasePlayCount(int jmlh)
         {
-            playCount += jmlh;
+            if (jmlh < 0 || jmlh > 25000000)
+                throw new ArgumentOutOfRangeException(nameof(jmlh),
+                    "Input penambahan play count harus antara 0 hingga 25,000,000.");
+            int tampung;
+            try
+            {
+                checked
+                {
+                   tampung = playCount + jmlh;
+                }
+            }
+            catch (OverflowException ex)
+            {
+                Console.WriteLine("Error: overflow rek");
+                tampung = playCount;
+            }
+            playCount = tampung;
         }
 
         public void PrintVideoDetails()
@@ -78,7 +116,6 @@
             return title;
         }
     }
-
     static void Main(String[] args)
     {
         SayaTubeUser user1 = new SayaTubeUser("Fachry");
@@ -119,8 +156,71 @@
         Console.WriteLine(user1.Username + " memiliki total playcount: " + user1.GetTotalVideoPlayCount());
         Console.WriteLine();
 
-        user1.PrintAllVideoPlaycount();
         Console.WriteLine();
-    }
 
+        try
+        {
+            user1.PrintAllVideoPlaycount();
+            Console.WriteLine();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.ToString());
+        }
+
+        try
+        {
+            SayaTubeUser user2 = new SayaTubeUser(null);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+
+        try
+        {
+            SayaTubeUser user3 = new SayaTubeUser("--------------------------------------------------------------------------------------------------------------------------------");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+
+        try
+        {
+            SayaTubeVideo vid11 = new SayaTubeVideo(null);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error: " + ex.Message);
+        }
+
+        try
+        {
+            SayaTubeVideo vid12 = new SayaTubeVideo("-------------------------------------------------------------------------------------------------------------------------------");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error: " + ex.Message);
+        }
+
+        try
+        {
+            SayaTubeVideo vid13 = new SayaTubeVideo("Tutorial Design By Contract – Fachruddin Ghalibi ");
+            vid4.IncreasePlayCount(100000000);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error: " + ex.Message);
+        }
+
+        SayaTubeVideo vid14 = new SayaTubeVideo("Tutorial Design By Contract – Fachruddin Ghalibi");
+
+        for (int i = 0; i < 100; i++)
+        {
+            vid14.IncreasePlayCount(25000000);
+        }
+
+        vid14.PrintVideoDetails();
+    }
 }
